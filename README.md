@@ -1,2 +1,2 @@
 # Candy_Crush_bot
-Implementation of Candy Crush bot using genetic algorithm
+Basic implementation of Candy Crush bot using genetic algorithm
