@@ -1,18 +1,13 @@
 package hr.fer.axilis;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.InputStreamReader;
+import java.io.BufferedInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
-import java.util.ArrayList;
-
-import javax.net.ssl.HttpsURLConnection;
-
+import org.json.JSONObject;
 import java.net.HttpURLConnection;
 
 public class JavaWebAPI {
-	
-	private final String USER_AGENT = "Mozilla/5.0";
 	
 	private String url;
 
@@ -20,72 +15,30 @@ public class JavaWebAPI {
 		this.url = url;
 	}
 	
-	// HTTP GET request
-	public String sendGet() throws Exception {
-
-			URL obj = new URL(url);
-			HttpURLConnection connection = (HttpURLConnection) obj.openConnection();
-
-			connection.setRequestMethod("GET");
-
-			connection.setRequestProperty("User-Agent", USER_AGENT);
-
-			int responseCode = connection.getResponseCode();
-			System.out.println("\nSending 'GET' request to URL : " + url);
-			System.out.println("Response Code : " + responseCode);
-
-			BufferedReader in = new BufferedReader(
-			        new InputStreamReader(connection.getInputStream()));
-			String inputLine;
-			StringBuffer response = new StringBuffer();
-
-			while ((inputLine = in.readLine()) != null) {
-				response.append(inputLine);
-			}
-			in.close();
-
-			return response.toString();
-	}
-	
-	
-	private String sendPost() throws Exception {
+	public JSONObject sendPost(String path, JSONObject parameters) throws Exception {
 		
-		URL obj = new URL(url);
-		HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
+            String query = url + path; 
+            String json = parameters.toString(); 
 
-		con.setRequestMethod("POST");
-		con.setRequestProperty("User-Agent", USER_AGENT);
-		con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+            URL url = new URL(query);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(5000);
+            connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            connection.setDoOutput(true);
+            connection.setDoInput(true);
+            connection.setRequestMethod("POST");
 
-		String urlParameters = "sn=C02G8416DRJM&cn=&locale=&caller=&num=12345";
+            OutputStream os = connection.getOutputStream();
+            os.write(json.getBytes("UTF-8"));
+            os.close();
 
-		// Send post request
-		con.setDoOutput(true);
-		DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-		wr.writeBytes(urlParameters);
-		wr.flush();
-		wr.close();
+            // read the response
+            InputStream in = new BufferedInputStream(connection.getInputStream());
+            String result = org.apache.commons.io.IOUtils.toString(in, "UTF-8");
+            JSONObject jsonObject = new JSONObject(result);
+            in.close();
+            connection.disconnect();
 
-		int responseCode = con.getResponseCode();
-		System.out.println("\nSending 'POST' request to URL : " + url);
-		System.out.println("Post parameters : " + urlParameters);
-		System.out.println("Response Code : " + responseCode);
-
-		BufferedReader in = new BufferedReader(
-		        new InputStreamReader(con.getInputStream()));
-		String inputLine;
-		StringBuffer response = new StringBuffer();
-
-		while ((inputLine = in.readLine()) != null) {
-			response.append(inputLine);
-		}
-		in.close();
-		return response.toString();
-	}
-
-	public ArrayList<ArrayList<BoardElement>> getBoard() {
-		// return board
-		return null; 
-	}
-	
+            return jsonObject;
+    }
 }

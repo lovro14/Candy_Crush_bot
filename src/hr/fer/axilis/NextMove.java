@@ -2,50 +2,30 @@ package hr.fer.axilis;
 
 public class NextMove {
 	
-	private int startX; 
-	private int startY; 
-	private int nextX;
-	private int nextY;
+	private int moveX;
+	private int moveY;
 	private double score;
 	
-	public NextMove(int startX, int startY, int nextX, int nextY, double score) {
-		this.startX = startX; 
-		this.startY = startY; 
-		this.nextX = nextX;
-		this.nextY = nextY;
+	public NextMove(int moveX, int moveY, double score) {
+		this.moveX = moveX;
+		this.moveY = moveY;
 		this.score = score;
 	}
 
-	public int getStartX() {
-		return startX;
+	public int getMoveX() {
+		return moveX;
 	}
 
-	public void setStartX(int startX) {
-		this.startX = startX;
+	public void setMoveX(int moveX) {
+		this.moveX = moveX;
 	}
 
-	public int getStartY() {
-		return startY;
+	public int getMoveY() {
+		return moveY;
 	}
 
-	public void setStartY(int startY) {
-		this.startY = startY;
-	}
-
-	public int getNextX() {
-		return nextX;
-	}
-
-	public void setNextX(int nextX) {
-		this.nextX = nextX;
-	}
-
-	public int getNextY() {
-		return nextY;
-	}
-
-	public void setNextY(int nextY) {
-		this.nextY = nextY;
+	public void setMoveY(int moveY) {
+		this.moveY = moveY;
 	}
 
 	public double getScore() {
@@ -55,7 +35,5 @@ public class NextMove {
 	public void setScore(double score) {
 		this.score = score;
 	}
-	
-	
 
 }

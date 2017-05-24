@@ -8,99 +8,97 @@ import java.util.Set;
 
 public class Population {
 	
-	private List<Chromosome> population;
 	private final int TOURNOMENT_SIZE = 3;
-	private final double CROSSOVER_RATIO = 0.3;
-	//private long duration
+	private final double CROSSOVER_RATIO = 0.5;
 	private Random rand = new Random();
-	private ArrayList<ArrayList<BoardElement>> board;
+	private ArrayList<ArrayList<String>> board;
 	private int maxIter;
 	private int populationSize;
+	private Solver solver;
 	
-	public Population(int populationSize, int maxIter,ArrayList<ArrayList<BoardElement>> board){
+	public Population(int populationSize, int maxIter,ArrayList<ArrayList<String>> board, Solver solver){
 		this.populationSize = populationSize;
 		this.maxIter = maxIter;
 		this.board = board;
-		createPopulation();
-		evaluatePopulation();
-	}
-	
-	
-	public List<Chromosome> getPopulation() {
-		return population;
+		this.solver = solver;
 	}
 
-	public void setPopulation(List<Chromosome> population) {
-		this.population = population;
-	}
-
-	public ArrayList<ArrayList<BoardElement>> getBoard() {
+	public ArrayList<ArrayList<String>> getBoard() {
 		return board;
 	}
 
-	private void createPopulation() {
-		population = new ArrayList<>();
+	private ArrayList<Chromosome> createPopulation() {
+		ArrayList<Chromosome> population = new ArrayList<>();
 		int currentPopulationSize = 0;
-		List<String> choosenIndexes = new ArrayList<>();
+		List<String> choosenIndices = new ArrayList<>();
 		while(currentPopulationSize < populationSize){
-			int x = rand.nextInt(6);
-			int y = rand.nextInt(6);
-			String indexes = String.valueOf(x)+" "+String.valueOf(y);
-			if(!choosenIndexes.contains(indexes)){
+			int x = rand.nextInt(9);
+			int y = rand.nextInt(9);
+			String indexes = String.valueOf(x) + " " + String.valueOf(y);
+			if(!choosenIndices.contains(indexes)){
 				currentPopulationSize++;
-				choosenIndexes.add(indexes);
-				population.add(new Chromosome(x,y,board.get(x).get(y),board));
+				choosenIndices.add(indexes);
+				population.add(new Chromosome(x, y, board.get(x).get(y), board));
 			}
 		}
-		
+		return population;
 	}
 	
-	public void  evaluatePopulation(){
-		for (Chromosome chromosome : population){
-			chromosome.evaluate();
+	public void  evaluatePopulation(ArrayList<Chromosome> population){
+		for (int i=0; i<population.size(); i++) {
+			population.get(i).evaluate(solver);
 		}
 	}
-	
-	public Chromosome findBestChromosome(){
-		double max = 0.0;
-		Chromosome maxChromosome= null;
-		for(Chromosome chromosome : population){
-			if (chromosome.getFitnessValue()>max){
-				max = chromosome.getFitnessValue();
-				maxChromosome = chromosome;
-			}
-		}
-		return maxChromosome;
-	}
-	
+
 	public Chromosome run(){
+		ArrayList<Chromosome> population = new ArrayList<>(); 
+		population = createPopulation();
+		evaluatePopulation(population);
 		
-		ArrayList<Chromosome> newPopulation = new ArrayList<>();
+		ArrayList<Chromosome> newPopulation; 
 		int counter = 0;
+
 		while(true){
-			newPopulation.add(findBestChromosome());
-			while (newPopulation.size()<population.size()){
-				List<Chromosome> tournomentWinners = tournomentElimination();
-				Chromosome childChromosom = crossChromosomes(tournomentWinners);
-				childChromosom.mutation();
-				childChromosom.evaluate();
-				newPopulation.add(childChromosom);
-			}		
+			Chromosome bestCh = findBestChromosome(population);
+			newPopulation = new ArrayList<>();
 			
-			// svi su evaluirani
-			this.setPopulation(newPopulation);
-			System.out.println("Iteracija: " + counter + " Najbolja jedinka u populaciji: " + findBestChromosome()); 
-			newPopulation.clear();
-			counter++;
-		
-			if (counter >= maxIter) {
-				Chromosome best = findBestChromosome(); 
-				return best;  
+			while(newPopulation.size()<populationSize-1){
+				List<Chromosome> tournamentWinners = tournamentElimination(population);
+				Chromosome crossChromosome = crossChromosomes(tournamentWinners);
+				crossChromosome.mutation();
+				crossChromosome.evaluate(solver);
+				newPopulation.add(crossChromosome);
 			}
-		}
+
+			// elitism and keep best chromosome in next generation
+			newPopulation.add(bestCh); 
+
+			population = new ArrayList<>(); 
+			population.addAll(newPopulation); 
+			counter++;
+			
+			if(counter >= maxIter){
+				return findBestChromosome(population);
+			}
+		}		
+
 	}
 	
-	
+
+	private Chromosome findBestChromosome(ArrayList<Chromosome> population) {
+		double max = -1.0; 
+		int maxIndex = 0; 
+		for(int i=0; i<populationSize; i++) {
+			if(population.get(i).getFitnessValue() > max ) {
+				max = population.get(i).getFitnessValue();
+				maxIndex = i; 
+			}
+		}
+		Chromosome ch = new Chromosome(population.get(maxIndex)); 	
+		return ch;
+	}
+
+
 	private Chromosome crossChromosomes(List<Chromosome> tournomentWinners) {
 		ArrayList<Chromosome> temp = new ArrayList<Chromosome>(); 
 		temp.addAll(tournomentWinners); 
@@ -117,20 +115,19 @@ public class Population {
 			}
 		}	
 		else {
-			// vrati jednog od winera
 			int randId = rand.nextInt(2);
 			return tournomentWinners.get(randId); 
 		}
 	}
 
 
-	private  List<Chromosome> tournomentElimination() {
+	private  List<Chromosome> tournamentElimination(ArrayList<Chromosome> population) {
 		List<Chromosome> randomChromosoms = new ArrayList<>();
 		Set<Integer> indexSet = null;
 		while(true){
 			indexSet = new HashSet<>();
 			for(int i = 0; i < TOURNOMENT_SIZE; i++){
-				int n = 0 + (int)(Math.random() * ((population.size()-1 - 0) + 1));
+				int n = rand.nextInt(populationSize-1);
 				indexSet.add(n);
 			}
 			if(indexSet.size()==TOURNOMENT_SIZE){
@@ -140,19 +137,18 @@ public class Population {
 		for(Integer n : indexSet){
 			randomChromosoms.add(population.get(n));
 		}
-		
-		int minindex = 0;
+		int minIndex = 0;
 		double min = Double.MAX_VALUE;
 		
 		for(int i = 0; i < randomChromosoms.size(); i++){
 			if(randomChromosoms.get(i).getFitnessValue()<min){
 				min = randomChromosoms.get(i).getFitnessValue();
-				minindex = i;
+				minIndex = i;
 			}
 		}
-		randomChromosoms.remove(minindex);
-		return randomChromosoms;
+		randomChromosoms.remove(minIndex);
+		ArrayList<Chromosome> lis = new ArrayList<>();
+		lis.addAll(randomChromosoms);
+		return lis;
 	}
-
-	
 }
